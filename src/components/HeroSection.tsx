@@ -1,11 +1,37 @@
 
 import { Button } from "@/components/ui/button";
 import { Shield, Package, Globe, Zap } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import UserMenu from "./UserMenu";
 
 const HeroSection = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleGetStarted = () => {
+    if (user) {
+      // User is already logged in, scroll to dashboard or navigate to a specific section
+      const dashboardElement = document.querySelector('[data-section="dashboard"]');
+      if (dashboardElement) {
+        dashboardElement.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      // User is not logged in, navigate to auth page
+      navigate('/auth');
+    }
+  };
+
   return (
     <div className="relative bg-black text-white overflow-hidden">
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0di00aC0ydjRoLTR2Mmg0djRoMnYtNGg0di0yaC00em0wLTMwVjBoLTJ2NGgtNHYyaDR2NGgyVjZoNFY0aC00ek02IDM0di00SDR2NGgwdjJoNHY0aDJ2LTRoNHYtMkg2ek02IDRGMEI0djRIMHYyaDR2NGgyVjZoNFY0SDZ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-20"></div>
+      
+      {/* User Menu in top right */}
+      {user && (
+        <div className="absolute top-4 right-4 z-10">
+          <UserMenu />
+        </div>
+      )}
       
       <div className="relative container mx-auto px-4 py-16">
         <div className="max-w-4xl mx-auto text-center">
@@ -30,8 +56,8 @@ const HeroSection = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white">
-              Start Tracking
+            <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleGetStarted}>
+              {user ? 'Go to Dashboard' : 'Get Started'}
             </Button>
             <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10">
               Learn More
