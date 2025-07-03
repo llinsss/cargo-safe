@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useRealtimeTracking } from "@/hooks/useRealtimeTracking";
 import { 
   MapPin, 
   Clock, 
@@ -15,7 +15,9 @@ import {
   AlertTriangle,
   Search,
   Loader2,
-  Package
+  Package,
+  Wifi,
+  WifiOff
 } from "lucide-react";
 
 interface TrackingEvent {
@@ -45,6 +47,9 @@ const ShipmentTracking = () => {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedShipment, setSelectedShipment] = useState<string | null>(null);
+  
+  // Enable real-time updates for the selected shipment
+  const { isConnected } = useRealtimeTracking(selectedShipment || undefined);
 
   // Fetch user's shipments for search
   const { data: shipments = [], isLoading } = useQuery({
@@ -202,7 +207,23 @@ const ShipmentTracking = () => {
       {selectedShipment && (
         <Card>
           <CardHeader>
-            <CardTitle>Shipment Details</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Shipment Details</CardTitle>
+              {/* Real-time Connection Status */}
+              <div className="flex items-center gap-2 text-sm">
+                {isConnected ? (
+                  <>
+                    <Wifi className="w-4 h-4 text-green-500" />
+                    <span className="text-green-600">Live tracking</span>
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-500">Connecting...</span>
+                  </>
+                )}
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {detailsLoading ? (
@@ -248,7 +269,15 @@ const ShipmentTracking = () => {
 
                 {/* Tracking Timeline */}
                 <div>
-                  <h4 className="font-semibold mb-4">Tracking Timeline</h4>
+                  <h4 className="font-semibold mb-4 flex items-center gap-2">
+                    Tracking Timeline
+                    {isConnected && (
+                      <Badge variant="outline" className="text-green-600 border-green-200">
+                        <Wifi className="w-3 h-3 mr-1" />
+                        Live
+                      </Badge>
+                    )}
+                  </h4>
                   {shipmentDetails.tracking_events && shipmentDetails.tracking_events.length > 0 ? (
                     <div className="space-y-4">
                       {shipmentDetails.tracking_events

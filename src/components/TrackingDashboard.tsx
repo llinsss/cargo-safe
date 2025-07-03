@@ -1,10 +1,10 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useRealtimeTracking } from "@/hooks/useRealtimeTracking";
 import { 
   Package, 
   Truck, 
@@ -14,7 +14,9 @@ import {
   DollarSign,
   Shield,
   MapPin,
-  Loader2
+  Loader2,
+  Wifi,
+  WifiOff
 } from "lucide-react";
 
 interface ShipmentWithCarrier {
@@ -34,6 +36,7 @@ interface ShipmentWithCarrier {
 
 const TrackingDashboard = () => {
   const { user } = useAuth();
+  const { isConnected } = useRealtimeTracking();
 
   // Fetch shipments for the current user
   const { data: shipments = [], isLoading } = useQuery({
@@ -133,6 +136,23 @@ const TrackingDashboard = () => {
 
   return (
     <div className="space-y-6">
+      {/* Real-time Connection Status */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm">
+          {isConnected ? (
+            <>
+              <Wifi className="w-4 h-4 text-green-500" />
+              <span className="text-green-600">Live updates active</span>
+            </>
+          ) : (
+            <>
+              <WifiOff className="w-4 h-4 text-gray-400" />
+              <span className="text-gray-500">Connecting to live updates...</span>
+            </>
+          )}
+        </div>
+      </div>
+
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
