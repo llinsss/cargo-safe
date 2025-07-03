@@ -7,6 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
 import { 
   Package, 
   MapPin, 
@@ -14,10 +18,22 @@ import {
   Clock, 
   Shield,
   FileText,
-  Plus
+  Plus,
+  Loader2
 } from "lucide-react";
 
+interface Carrier {
+  id: string;
+  name: string;
+  contact_email: string;
+  rating: number;
+  is_verified: boolean;
+}
+
 const CreateShipment = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     origin: "",
     destination: "",
@@ -28,10 +44,115 @@ const CreateShipment = () => {
     penaltyClause: ""
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Fetch carriers from database
+  const { data: carriers = [], isLoading: carriersLoading } = useQuery({
+    queryKey: ['carriers'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('carriers')
+        .select('*')
+        .eq('is_verified', true)
+        .order('rating', { ascending: false });
+      
+      if (error) throw error;
+      return data as Carrier[];
+    }
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Creating shipment with data:", formData);
-    // Here you would integrate with the smart contract
+    
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Authentication required",
+        description: "Please sign in to create a shipment.",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Generate shipment number
+      const { data: shipmentNumber, error: numberError } = await supabase
+        .rpc('generate_shipment_number');
+
+      if (numberError) throw numberError;
+
+      // Create the shipment
+      const { data: shipment, error: shipmentError } = await supabase
+        .from('shipments')
+        .insert({
+          shipment_number: shipmentNumber,
+          customer_id: user.id,
+          carrier_id: formData.carrier || null,
+          origin_address: formData.origin,
+          destination_address: formData.destination,
+          description: formData.description,
+          value_usd: parseFloat(formData.value),
+          expected_delivery: formData.deliveryDate ? new Date(formData.deliveryDate).toISOString() : null,
+          penalty_per_day: formData.penaltyClause ? parseFloat(formData.penaltyClause) : 0,
+          status: 'draft'
+        })
+        .select()
+        .single();
+
+      if (shipmentError) throw shipmentError;
+
+      // Create initial custody chain entry
+      const { error: custodyError } = await supabase
+        .from('custody_chain')
+        .insert({
+          shipment_id: shipment.id,
+          holder_id: user.id,
+          holder_name: user.user_metadata?.full_name || user.email || 'Customer',
+          action: 'created',
+          location: formData.origin,
+          is_verified: true
+        });
+
+      if (custodyError) throw custodyError;
+
+      // Create initial tracking event
+      const { error: trackingError } = await supabase
+        .from('tracking_events')
+        .insert({
+          shipment_id: shipment.id,
+          event_type: 'shipment_created',
+          description: 'Shipment created and smart contract initialized',
+          location: formData.origin,
+          recorded_by: user.id
+        });
+
+      if (trackingError) throw trackingError;
+
+      toast({
+        title: "Shipment Created Successfully!",
+        description: `Shipment ${shipmentNumber} has been created and added to the blockchain.`,
+      });
+
+      // Reset form
+      setFormData({
+        origin: "",
+        destination: "",
+        value: "",
+        description: "",
+        carrier: "",
+        deliveryDate: "",
+        penaltyClause: ""
+      });
+
+    } catch (error: any) {
+      console.error('Error creating shipment:', error);
+      toast({
+        variant: "destructive",
+        title: "Failed to create shipment",
+        description: error.message || "An unexpected error occurred. Please try again.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -88,6 +209,8 @@ const CreateShipment = () => {
                 <Input
                   id="value"
                   type="number"
+                  step="0.01"
+                  min="0"
                   placeholder="Enter total value"
                   value={formData.value}
                   onChange={(e) => setFormData({ ...formData, value: e.target.value })}
@@ -101,15 +224,30 @@ const CreateShipment = () => {
                   <Shield className="w-4 h-4" />
                   Carrier Selection
                 </Label>
-                <Select value={formData.carrier} onValueChange={(value) => setFormData({ ...formData, carrier: value })}>
+                <Select 
+                  value={formData.carrier} 
+                  onValueChange={(value) => setFormData({ ...formData, carrier: value })}
+                  disabled={carriersLoading}
+                >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select carrier" />
+                    <SelectValue placeholder={carriersLoading ? "Loading carriers..." : "Select carrier"} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="securelog">SecureLogistics Inc.</SelectItem>
-                    <SelectItem value="fasttrack">FastTrack Express</SelectItem>
-                    <SelectItem value="northwest">NorthWest Freight</SelectItem>
-                    <SelectItem value="global">Global Transport Co.</SelectItem>
+                    {carriers.map((carrier) => (
+                      <SelectItem key={carrier.id} value={carrier.id}>
+                        <div className="flex items-center justify-between w-full">
+                          <span>{carrier.name}</span>
+                          <div className="flex items-center gap-2 ml-2">
+                            {carrier.is_verified && (
+                              <Badge variant="outline" className="text-xs">Verified</Badge>
+                            )}
+                            <span className="text-xs text-muted-foreground">
+                              ★ {carrier.rating?.toFixed(1) || 'N/A'}
+                            </span>
+                          </div>
+                        </div>
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -125,7 +263,6 @@ const CreateShipment = () => {
                   type="datetime-local"
                   value={formData.deliveryDate}
                   onChange={(e) => setFormData({ ...formData, deliveryDate: e.target.value })}
-                  required
                 />
               </div>
 
@@ -138,6 +275,8 @@ const CreateShipment = () => {
                 <Input
                   id="penaltyClause"
                   type="number"
+                  step="0.01"
+                  min="0"
                   placeholder="Per day delay penalty"
                   value={formData.penaltyClause}
                   onChange={(e) => setFormData({ ...formData, penaltyClause: e.target.value })}
@@ -154,6 +293,7 @@ const CreateShipment = () => {
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={3}
+                required
               />
             </div>
 
@@ -188,11 +328,25 @@ const CreateShipment = () => {
             </Card>
 
             <div className="flex gap-4">
-              <Button type="submit" className="flex-1" size="lg">
-                <Plus className="w-4 h-4 mr-2" />
-                Create Smart Contract
+              <Button 
+                type="submit" 
+                className="flex-1" 
+                size="lg"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Creating Contract...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Smart Contract
+                  </>
+                )}
               </Button>
-              <Button type="button" variant="outline" size="lg">
+              <Button type="button" variant="outline" size="lg" disabled={isSubmitting}>
                 Save as Draft
               </Button>
             </div>
