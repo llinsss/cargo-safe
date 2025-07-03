@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,6 +24,7 @@ import CreateShipment from "@/components/CreateShipment";
 import ShipmentTracking from "@/components/ShipmentTracking";
 import NFTCustodyChain from "@/components/NFTCustodyChain";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import CarrierDashboard from "@/components/CarrierDashboard";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -36,7 +36,7 @@ const Index = () => {
       <ProtectedRoute>
         <div className="container mx-auto px-4 py-8" data-section="dashboard">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 mb-8">
+            <TabsList className="grid w-full grid-cols-5 mb-8">
               <TabsTrigger value="dashboard" className="flex items-center gap-2">
                 <Package className="w-4 h-4" />
                 Dashboard
@@ -48,6 +48,10 @@ const Index = () => {
               <TabsTrigger value="tracking" className="flex items-center gap-2">
                 <MapPin className="w-4 h-4" />
                 Track Goods
+              </TabsTrigger>
+              <TabsTrigger value="carrier" className="flex items-center gap-2">
+                <Truck className="w-4 h-4" />
+                Carrier Updates
               </TabsTrigger>
               <TabsTrigger value="custody" className="flex items-center gap-2">
                 <Shield className="w-4 h-4" />
@@ -65,6 +69,10 @@ const Index = () => {
 
             <TabsContent value="tracking">
               <ShipmentTracking />
+            </TabsContent>
+
+            <TabsContent value="carrier">
+              <CarrierDashboard />
             </TabsContent>
 
             <TabsContent value="custody">
