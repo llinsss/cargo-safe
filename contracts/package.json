@@ -1,0 +1,19 @@
+{
+  "name": "transport-smart-contracts",
+  "version": "1.0.0",
+  "description": "Smart contracts for transport and logistics management",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:localhost": "hardhat run scripts/deploy.js --network localhost",
+    "deploy:testnet": "hardhat run scripts/deploy.js --network goerli",
+    "deploy:mainnet": "hardhat run scripts/deploy.js --network mainnet"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^2.0.0",
+    "hardhat": "^2.12.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.8.0"
+  }
+}
