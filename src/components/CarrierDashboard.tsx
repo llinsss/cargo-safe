@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useRealtimeTracking } from "@/hooks/useRealtimeTracking";
 import { useToast } from "@/hooks/use-toast";
+import { Database } from "@/integrations/supabase/types";
 import { 
   Package, 
   MapPin, 
@@ -24,6 +25,8 @@ import {
   WifiOff
 } from "lucide-react";
 
+type ShipmentStatus = Database["public"]["Enums"]["shipment_status"];
+
 interface ShipmentWithDetails {
   id: string;
   shipment_number: string;
@@ -33,10 +36,10 @@ interface ShipmentWithDetails {
   destination_address: string;
   description: string;
   value_usd: number;
-  customer: {
+  profiles: {
     full_name: string;
     email: string;
-  };
+  } | null;
 }
 
 const CarrierDashboard = () => {
@@ -52,7 +55,7 @@ const CarrierDashboard = () => {
     location: ""
   });
   const [statusUpdate, setStatusUpdate] = useState({
-    status: "",
+    status: "" as ShipmentStatus | "",
     progress: 0
   });
 
@@ -129,7 +132,7 @@ const CarrierDashboard = () => {
       const { data, error } = await supabase
         .from('shipments')
         .update({
-          status: updateData.status,
+          status: updateData.status as ShipmentStatus,
           progress: updateData.progress,
           updated_at: new Date().toISOString()
         })
@@ -268,7 +271,7 @@ const CarrierDashboard = () => {
                       </div>
                       <div>
                         <h3 className="font-semibold">{shipment.shipment_number}</h3>
-                        <p className="text-sm text-gray-600">Customer: {shipment.customer?.full_name}</p>
+                        <p className="text-sm text-gray-600">Customer: {shipment.profiles?.full_name || 'Unknown'}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -310,7 +313,7 @@ const CarrierDashboard = () => {
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="status">Status</Label>
-                <Select value={statusUpdate.status} onValueChange={(value) => setStatusUpdate(prev => ({ ...prev, status: value }))}>
+                <Select value={statusUpdate.status} onValueChange={(value: ShipmentStatus) => setStatusUpdate(prev => ({ ...prev, status: value }))}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
