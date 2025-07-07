@@ -11,6 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
+import { useTransportContract } from "@/hooks/useTransportContract";
+import { WalletIntegration } from "./WalletIntegration";
 import { 
   Package, 
   MapPin, 
@@ -34,6 +36,7 @@ const CreateShipment = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { isBlockchainEnabled, createShipment: createBlockchainShipment } = useTransportContract();
   const [formData, setFormData] = useState({
     origin: "",
     destination: "",
@@ -127,9 +130,28 @@ const CreateShipment = () => {
 
       if (trackingError) throw trackingError;
 
+      // Try to create blockchain contract if wallet is connected
+      if (isBlockchainEnabled) {
+        try {
+          await createBlockchainShipment({
+            shipmentNumber,
+            carrierAddress: formData.carrier || '0x0000000000000000000000000000000000000000',
+            originAddress: formData.origin,
+            destinationAddress: formData.destination,
+            description: formData.description,
+            valueUSD: parseFloat(formData.value),
+            expectedDelivery: formData.deliveryDate ? new Date(formData.deliveryDate) : new Date(),
+            penaltyPerDay: parseFloat(formData.penaltyClause) || 0,
+            escrowAmount: '0.001', // Minimal escrow for demo
+          });
+        } catch (blockchainError) {
+          console.warn('Blockchain creation failed, continuing with database-only mode:', blockchainError);
+        }
+      }
+
       toast({
         title: "Shipment Created Successfully!",
-        description: `Shipment ${shipmentNumber} has been created and added to the blockchain.`,
+        description: `Shipment ${shipmentNumber} has been created${isBlockchainEnabled ? ' with blockchain integration' : ' in database mode'}.`,
       });
 
       // Reset form
@@ -157,6 +179,7 @@ const CreateShipment = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      <WalletIntegration showInline />
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

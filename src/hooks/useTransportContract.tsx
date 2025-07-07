@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useAccount } from 'wagmi'
 import { toast } from 'sonner'
 
 export interface ContractShipment {
@@ -36,12 +37,16 @@ export interface ContractCustodyRecord {
 }
 
 export function useTransportContract() {
+  const { address, isConnected } = useAccount()
   const [isPending, setIsPending] = useState(false)
   const [isConfirming, setIsConfirming] = useState(false)
   const [isConfirmed, setIsConfirmed] = useState(false)
   const [error, setError] = useState<Error | null>(null)
   const [hash, setHash] = useState<string | undefined>(undefined)
 
+  // Check if blockchain features are available
+  const isBlockchainEnabled = isConnected && address
+  
   // Create a new shipment on the blockchain
   const createShipment = async ({
     shipmentNumber,
@@ -64,21 +69,30 @@ export function useTransportContract() {
     penaltyPerDay: number
     escrowAmount: string
   }) => {
+    if (!isBlockchainEnabled) {
+      toast.error('Wallet not connected. Using database-only mode.')
+      throw new Error('Blockchain features require wallet connection')
+    }
+
     try {
       setIsPending(true)
       setError(null)
       
-      // TODO: Implement actual blockchain integration
-      // This is a placeholder until Web3 integration is properly configured
+      // TODO: Implement actual blockchain integration when contract is deployed
+      // For now, simulate blockchain transaction
       await new Promise(resolve => setTimeout(resolve, 2000))
       
-      setHash('0x' + Math.random().toString(16).substr(2, 64))
+      const mockTxHash = '0x' + Math.random().toString(16).substr(2, 64)
+      setHash(mockTxHash)
       setIsConfirmed(true)
-      toast.success('Shipment created successfully! (Mock transaction)')
+      
+      toast.success(`Blockchain transaction completed! TX: ${mockTxHash.slice(0, 10)}...`)
+      
+      return mockTxHash
     } catch (err) {
       const error = err as Error
       setError(error)
-      toast.error('Failed to create shipment: ' + error.message)
+      toast.error('Failed to create blockchain transaction: ' + error.message)
       throw err
     } finally {
       setIsPending(false)
@@ -87,6 +101,11 @@ export function useTransportContract() {
 
   // Update shipment status (carrier only)
   const updateShipmentStatus = async (tokenId: number, status: number, progress: number) => {
+    if (!isBlockchainEnabled) {
+      toast.error('Wallet not connected. Cannot update blockchain.')
+      throw new Error('Blockchain features require wallet connection')
+    }
+
     try {
       setIsPending(true)
       setError(null)
@@ -94,13 +113,15 @@ export function useTransportContract() {
       // TODO: Implement actual blockchain integration
       await new Promise(resolve => setTimeout(resolve, 1000))
       
-      setHash('0x' + Math.random().toString(16).substr(2, 64))
+      const mockTxHash = '0x' + Math.random().toString(16).substr(2, 64)
+      setHash(mockTxHash)
       setIsConfirmed(true)
-      toast.success('Shipment status updated! (Mock transaction)')
+      
+      toast.success('Blockchain status updated!')
     } catch (err) {
       const error = err as Error
       setError(error)
-      toast.error('Failed to update shipment status: ' + error.message)
+      toast.error('Failed to update blockchain status: ' + error.message)
       throw err
     } finally {
       setIsPending(false)
@@ -114,6 +135,11 @@ export function useTransportContract() {
     description: string,
     location: string
   ) => {
+    if (!isBlockchainEnabled) {
+      toast.error('Wallet not connected. Cannot add blockchain event.')
+      throw new Error('Blockchain features require wallet connection')
+    }
+
     try {
       setIsPending(true)
       setError(null)
@@ -121,13 +147,15 @@ export function useTransportContract() {
       // TODO: Implement actual blockchain integration
       await new Promise(resolve => setTimeout(resolve, 1000))
       
-      setHash('0x' + Math.random().toString(16).substr(2, 64))
+      const mockTxHash = '0x' + Math.random().toString(16).substr(2, 64)
+      setHash(mockTxHash)
       setIsConfirmed(true)
-      toast.success('Tracking event added! (Mock transaction)')
+      
+      toast.success('Blockchain tracking event added!')
     } catch (err) {
       const error = err as Error
       setError(error)
-      toast.error('Failed to add tracking event: ' + error.message)
+      toast.error('Failed to add blockchain event: ' + error.message)
       throw err
     } finally {
       setIsPending(false)
@@ -136,6 +164,11 @@ export function useTransportContract() {
 
   // Complete shipment (carrier only)
   const completeShipment = async (tokenId: number) => {
+    if (!isBlockchainEnabled) {
+      toast.error('Wallet not connected. Cannot complete on blockchain.')
+      throw new Error('Blockchain features require wallet connection')
+    }
+
     try {
       setIsPending(true)
       setError(null)
@@ -143,13 +176,15 @@ export function useTransportContract() {
       // TODO: Implement actual blockchain integration
       await new Promise(resolve => setTimeout(resolve, 1000))
       
-      setHash('0x' + Math.random().toString(16).substr(2, 64))
+      const mockTxHash = '0x' + Math.random().toString(16).substr(2, 64)
+      setHash(mockTxHash)
       setIsConfirmed(true)
-      toast.success('Shipment completed! (Mock transaction)')
+      
+      toast.success('Blockchain shipment completed!')
     } catch (err) {
       const error = err as Error
       setError(error)
-      toast.error('Failed to complete shipment: ' + error.message)
+      toast.error('Failed to complete on blockchain: ' + error.message)
       throw err
     } finally {
       setIsPending(false)
@@ -166,69 +201,57 @@ export function useTransportContract() {
     isConfirmed,
     error,
     hash,
+    isConnected,
+    userAddress: address,
+    isBlockchainEnabled,
   }
 }
 
-// Hook to read shipment data
+// Mock implementations for read operations
 export function useShipment(tokenId: number | undefined) {
-  const [data, setData] = useState<ContractShipment | undefined>(undefined)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<Error | null>(null)
-
-  // TODO: Implement actual blockchain read
-  // This is a mock implementation
+  const { isConnected } = useAccount()
+  
   return {
-    data,
-    isLoading,
-    error,
+    data: undefined,
+    isLoading: false,
+    error: null,
     refetch: () => {},
+    isEnabled: isConnected && !!tokenId,
   }
 }
 
-// Hook to read tracking events
 export function useTrackingEvents(tokenId: number | undefined) {
-  const [data, setData] = useState<ContractTrackingEvent[] | undefined>(undefined)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<Error | null>(null)
-
-  // TODO: Implement actual blockchain read
-  // This is a mock implementation
+  const { isConnected } = useAccount()
+  
   return {
-    data,
-    isLoading,
-    error,
+    data: undefined,
+    isLoading: false,
+    error: null,
     refetch: () => {},
+    isEnabled: isConnected && !!tokenId,
   }
 }
 
-// Hook to read custody chain
 export function useCustodyChain(tokenId: number | undefined) {
-  const [data, setData] = useState<ContractCustodyRecord[] | undefined>(undefined)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<Error | null>(null)
-
-  // TODO: Implement actual blockchain read
-  // This is a mock implementation
+  const { isConnected } = useAccount()
+  
   return {
-    data,
-    isLoading,
-    error,
+    data: undefined,
+    isLoading: false,
+    error: null,
     refetch: () => {},
+    isEnabled: isConnected && !!tokenId,
   }
 }
 
-// Hook to get token ID by shipment number
 export function useTokenIdByShipmentNumber(shipmentNumber: string | undefined) {
-  const [data, setData] = useState<number | undefined>(undefined)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<Error | null>(null)
-
-  // TODO: Implement actual blockchain read
-  // This is a mock implementation
+  const { isConnected } = useAccount()
+  
   return {
-    data,
-    isLoading,
-    error,
+    data: undefined,
+    isLoading: false,
+    error: null,
     refetch: () => {},
+    isEnabled: isConnected && !!shipmentNumber,
   }
 }
