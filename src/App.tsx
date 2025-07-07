@@ -10,6 +10,7 @@ import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import { config } from '@/lib/web3';
 import '@rainbow-me/rainbowkit/styles.css';
 import Index from "./pages/Index";
+import Settings from "./pages/Settings";
 import AuthPage from "./components/auth/AuthPage";
 import NotFound from "./pages/NotFound";
 
@@ -26,6 +27,7 @@ const App = () => (
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
+                <Route path="/settings" element={<Settings />} />
                 <Route path="/auth" element={<AuthPage />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
