@@ -1,7 +1,4 @@
-import { useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
-import { parseEther } from 'viem'
-import { TRANSPORT_CONTRACT_ABI, getContractAddress, ShipmentStatus } from '@/lib/web3'
-import { useChainId } from 'wagmi'
+import { useState } from 'react'
 import { toast } from 'sonner'
 
 export interface ContractShipment {
@@ -14,7 +11,7 @@ export interface ContractShipment {
   valueUSD: bigint
   expectedDelivery: bigint
   penaltyPerDay: bigint
-  status: ShipmentStatus
+  status: number
   progress: bigint
   escrowAmount: bigint
   isCompleted: boolean
@@ -39,13 +36,11 @@ export interface ContractCustodyRecord {
 }
 
 export function useTransportContract() {
-  const chainId = useChainId()
-  const contractAddress = getContractAddress(chainId)
-  
-  const { writeContractAsync, data: hash, isPending, error } = useWriteContract()
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-  })
+  const [isPending, setIsPending] = useState(false)
+  const [isConfirming, setIsConfirming] = useState(false)
+  const [isConfirmed, setIsConfirmed] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+  const [hash, setHash] = useState<string | undefined>(undefined)
 
   // Create a new shipment on the blockchain
   const createShipment = async ({
@@ -70,50 +65,45 @@ export function useTransportContract() {
     escrowAmount: string
   }) => {
     try {
-      const expectedDeliveryTimestamp = Math.floor(expectedDelivery.getTime() / 1000)
+      setIsPending(true)
+      setError(null)
       
-      const result = await writeContractAsync({
-        address: contractAddress as `0x${string}`,
-        abi: TRANSPORT_CONTRACT_ABI,
-        functionName: 'createShipment',
-        args: [
-          shipmentNumber,
-          carrierAddress as `0x${string}`,
-          originAddress,
-          destinationAddress,
-          description,
-          BigInt(valueUSD),
-          BigInt(expectedDeliveryTimestamp),
-          BigInt(penaltyPerDay),
-        ],
-        value: parseEther(escrowAmount),
-      })
+      // TODO: Implement actual blockchain integration
+      // This is a placeholder until Web3 integration is properly configured
+      await new Promise(resolve => setTimeout(resolve, 2000))
       
-      toast.success('Shipment created successfully!')
-      return result
+      setHash('0x' + Math.random().toString(16).substr(2, 64))
+      setIsConfirmed(true)
+      toast.success('Shipment created successfully! (Mock transaction)')
     } catch (err) {
-      console.error('Error creating shipment:', err)
-      toast.error('Failed to create shipment')
+      const error = err as Error
+      setError(error)
+      toast.error('Failed to create shipment: ' + error.message)
       throw err
+    } finally {
+      setIsPending(false)
     }
   }
 
   // Update shipment status (carrier only)
-  const updateShipmentStatus = async (tokenId: number, status: ShipmentStatus, progress: number) => {
+  const updateShipmentStatus = async (tokenId: number, status: number, progress: number) => {
     try {
-      const result = await writeContractAsync({
-        address: contractAddress as `0x${string}`,
-        abi: TRANSPORT_CONTRACT_ABI,
-        functionName: 'updateShipmentStatus',
-        args: [BigInt(tokenId), status, BigInt(progress)],
-      })
+      setIsPending(true)
+      setError(null)
       
-      toast.success('Shipment status updated!')
-      return result
+      // TODO: Implement actual blockchain integration
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      setHash('0x' + Math.random().toString(16).substr(2, 64))
+      setIsConfirmed(true)
+      toast.success('Shipment status updated! (Mock transaction)')
     } catch (err) {
-      console.error('Error updating shipment status:', err)
-      toast.error('Failed to update shipment status')
+      const error = err as Error
+      setError(error)
+      toast.error('Failed to update shipment status: ' + error.message)
       throw err
+    } finally {
+      setIsPending(false)
     }
   }
 
@@ -125,38 +115,44 @@ export function useTransportContract() {
     location: string
   ) => {
     try {
-      const result = await writeContractAsync({
-        address: contractAddress as `0x${string}`,
-        abi: TRANSPORT_CONTRACT_ABI,
-        functionName: 'addTrackingEvent',
-        args: [BigInt(tokenId), eventType, description, location],
-      })
+      setIsPending(true)
+      setError(null)
       
-      toast.success('Tracking event added!')
-      return result
+      // TODO: Implement actual blockchain integration
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      setHash('0x' + Math.random().toString(16).substr(2, 64))
+      setIsConfirmed(true)
+      toast.success('Tracking event added! (Mock transaction)')
     } catch (err) {
-      console.error('Error adding tracking event:', err)
-      toast.error('Failed to add tracking event')
+      const error = err as Error
+      setError(error)
+      toast.error('Failed to add tracking event: ' + error.message)
       throw err
+    } finally {
+      setIsPending(false)
     }
   }
 
   // Complete shipment (carrier only)
   const completeShipment = async (tokenId: number) => {
     try {
-      const result = await writeContractAsync({
-        address: contractAddress as `0x${string}`,
-        abi: TRANSPORT_CONTRACT_ABI,
-        functionName: 'completeShipment',
-        args: [BigInt(tokenId)],
-      })
+      setIsPending(true)
+      setError(null)
       
-      toast.success('Shipment completed!')
-      return result
+      // TODO: Implement actual blockchain integration
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      setHash('0x' + Math.random().toString(16).substr(2, 64))
+      setIsConfirmed(true)
+      toast.success('Shipment completed! (Mock transaction)')
     } catch (err) {
-      console.error('Error completing shipment:', err)
-      toast.error('Failed to complete shipment')
+      const error = err as Error
+      setError(error)
+      toast.error('Failed to complete shipment: ' + error.message)
       throw err
+    } finally {
+      setIsPending(false)
     }
   }
 
@@ -175,52 +171,64 @@ export function useTransportContract() {
 
 // Hook to read shipment data
 export function useShipment(tokenId: number | undefined) {
-  const chainId = useChainId()
-  const contractAddress = getContractAddress(chainId)
+  const [data, setData] = useState<ContractShipment | undefined>(undefined)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
 
-  return useReadContract({
-    address: contractAddress as `0x${string}`,
-    abi: TRANSPORT_CONTRACT_ABI,
-    functionName: 'getShipment',
-    args: tokenId ? [BigInt(tokenId)] : undefined,
-  })
+  // TODO: Implement actual blockchain read
+  // This is a mock implementation
+  return {
+    data,
+    isLoading,
+    error,
+    refetch: () => {},
+  }
 }
 
 // Hook to read tracking events
 export function useTrackingEvents(tokenId: number | undefined) {
-  const chainId = useChainId()
-  const contractAddress = getContractAddress(chainId)
+  const [data, setData] = useState<ContractTrackingEvent[] | undefined>(undefined)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
 
-  return useReadContract({
-    address: contractAddress as `0x${string}`,
-    abi: TRANSPORT_CONTRACT_ABI,
-    functionName: 'getTrackingEvents',
-    args: tokenId ? [BigInt(tokenId)] : undefined,
-  })
+  // TODO: Implement actual blockchain read
+  // This is a mock implementation
+  return {
+    data,
+    isLoading,
+    error,
+    refetch: () => {},
+  }
 }
 
 // Hook to read custody chain
 export function useCustodyChain(tokenId: number | undefined) {
-  const chainId = useChainId()
-  const contractAddress = getContractAddress(chainId)
+  const [data, setData] = useState<ContractCustodyRecord[] | undefined>(undefined)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
 
-  return useReadContract({
-    address: contractAddress as `0x${string}`,
-    abi: TRANSPORT_CONTRACT_ABI,
-    functionName: 'getCustodyChain',
-    args: tokenId ? [BigInt(tokenId)] : undefined,
-  })
+  // TODO: Implement actual blockchain read
+  // This is a mock implementation
+  return {
+    data,
+    isLoading,
+    error,
+    refetch: () => {},
+  }
 }
 
 // Hook to get token ID by shipment number
 export function useTokenIdByShipmentNumber(shipmentNumber: string | undefined) {
-  const chainId = useChainId()
-  const contractAddress = getContractAddress(chainId)
+  const [data, setData] = useState<number | undefined>(undefined)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
 
-  return useReadContract({
-    address: contractAddress as `0x${string}`,
-    abi: TRANSPORT_CONTRACT_ABI,
-    functionName: 'getTokenIdByShipmentNumber',
-    args: shipmentNumber ? [shipmentNumber] : undefined,
-  })
+  // TODO: Implement actual blockchain read
+  // This is a mock implementation
+  return {
+    data,
+    isLoading,
+    error,
+    refetch: () => {},
+  }
 }
