@@ -59,7 +59,12 @@ const HeroSection = () => {
             <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleGetStarted}>
               {user ? 'Go to Dashboard' : 'Get Started'}
             </Button>
-            <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10">
+            <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => {
+              const featuresElement = document.querySelector('.grid.grid-cols-1.md\\:grid-cols-4');
+              if (featuresElement) {
+                featuresElement.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}>
               Learn More
             </Button>
           </div>
