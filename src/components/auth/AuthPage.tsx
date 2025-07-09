@@ -60,7 +60,7 @@ const AuthPage = () => {
               <Shield className="w-6 h-6 text-white" />
             </div>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">SuiSecureTrack</h1>
+          <h1 className="text-2xl font-bold text-gray-900">SecureTrack</h1>
           <p className="text-gray-600 mt-2">Secure Blockchain Logistics</p>
         </div>
 
